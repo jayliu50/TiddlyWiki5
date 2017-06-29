@@ -43,7 +43,7 @@ exports.convertStyleNameToPropertyName = function(styleName) {
 	// Convert it by first removing any hyphens
 	var propertyName = $tw.utils.unHyphenateCss(styleName);
 	// Then check if it needs a prefix
-	if(document.body.style[propertyName] === undefined) {
+	if($tw.browser && document.body.style[propertyName] === undefined) {
 		var prefixes = ["O","MS","Moz","webkit"];
 		for(var t=0; t<prefixes.length; t++) {
 			var prefixedName = prefixes[t] + propertyName.substr(0,1).toUpperCase() + propertyName.substr(1);
@@ -148,9 +148,13 @@ exports.getFullScreenApis = function() {
 		"_fullscreenElement": d.webkitFullscreenElement !== undefined ? "webkitFullscreenElement" :
 							d.mozFullScreenElement !== undefined ? "mozFullScreenElement" :
 							d.msFullscreenElement !== undefined ? "msFullscreenElement" :
-							d.fullscreenElement !== undefined ? "fullscreenElement" : ""
+							d.fullscreenElement !== undefined ? "fullscreenElement" : "",
+		"_fullscreenChange": d.webkitFullscreenElement !== undefined ? "webkitfullscreenchange" :
+							d.mozFullScreenElement !== undefined ? "mozfullscreenchange" :
+							d.msFullscreenElement !== undefined ? "MSFullscreenChange" :
+							d.fullscreenElement !== undefined ? "fullscreenchange" : ""
 	};
-	if(!result._requestFullscreen || !result._exitFullscreen || !result._fullscreenElement) {
+	if(!result._requestFullscreen || !result._exitFullscreen || !result._fullscreenElement || !result._fullscreenChange) {
 		return null;
 	} else {
 		return result;

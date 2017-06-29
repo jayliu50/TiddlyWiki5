@@ -1,13 +1,14 @@
 created: 20140820151051019
-modified: 20140910211458809
+modified: 20150630205758258
 tags: Community
 title: Improving TiddlyWiki Documentation
 type: text/vnd.tiddlywiki
 
-Anyone can submit improvements to the TiddlyWiki documentation that appears on http://tiddlywiki.com.
+Anyone can submit improvements to the TiddlyWiki documentation that appears on http://tiddlywiki.com. (For improvements to the core code a more complicated process must be used because of the need to test the changes both in the browser and under Node.js before submission).
 
 # Read and observe the [[Documentation Style Guide]]
 # Create an account on https://github.com if you don't already have one
+# If you haven't done so already, sign the [[Contributor License Agreement]] as described in [[Signing the Contributor License Agreement]]
 # On http://tiddlywiki.com, click "edit" on the tiddler you want to improve
 # You should see a pink banner with the text: //Can you help us improve this documentation? Find out how to edit this tiddler on ~GitHub//
 # Click on the external link ...''this tiddler on ~GitHub''

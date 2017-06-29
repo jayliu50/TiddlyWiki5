@@ -37,6 +37,8 @@ Compute the internal state of the widget
 SendMessageWidget.prototype.execute = function() {
 	this.actionMessage = this.getAttribute("$message");
 	this.actionParam = this.getAttribute("$param");
+	this.actionName = this.getAttribute("$name");
+	this.actionValue = this.getAttribute("$value","");
 };
 
 /*
@@ -44,7 +46,7 @@ Refresh the widget by ensuring our attributes are up to date
 */
 SendMessageWidget.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
-	if(changedAttributes["$message"] || changedAttributes["$param"]) {
+	if(Object.keys(changedAttributes).length) {
 		this.refreshSelf();
 		return true;
 	}
@@ -55,25 +57,30 @@ SendMessageWidget.prototype.refresh = function(changedTiddlers) {
 Invoke the action associated with this widget
 */
 SendMessageWidget.prototype.invokeAction = function(triggeringWidget,event) {
-	// Get the parameter
+	// Get the string parameter
 	var param = this.actionParam;
-	// If the parameter is missing then we'll assemble the attributes as a hashmap
-	if(!param) {
-		param = Object.create(null);
-		var count = 0;
-		$tw.utils.each(this.attributes,function(attribute,name) {
-			if(name.charAt(0) !== "$") {
-				param[name] = attribute;
-				count++;
-			}
-		});
-		// Revert to an empty parameter if no values were found
-		if(!count) {
-			param = undefined;
+	// Assemble the attributes as a hashmap
+	var paramObject = Object.create(null);
+	var count = 0;
+	$tw.utils.each(this.attributes,function(attribute,name) {
+		if(name.charAt(0) !== "$") {
+			paramObject[name] = attribute;
+			count++;
 		}
+	});
+	// Add name/value pair if present
+	if(this.actionName) {
+		paramObject[this.actionName] = this.actionValue;
 	}
 	// Dispatch the message
-	this.dispatchEvent({type: this.actionMessage, param: param, tiddlerTitle: this.getVariable("currentTiddler")});
+	this.dispatchEvent({
+		type: this.actionMessage,
+		param: param,
+		paramObject: paramObject,
+		tiddlerTitle: this.getVariable("currentTiddler"),
+		navigateFromTitle: this.getVariable("storyTiddler"),
+		event: event
+	});
 	return true; // Action was invoked
 };
 

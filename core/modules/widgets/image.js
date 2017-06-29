@@ -52,7 +52,7 @@ ImageWidget.prototype.render = function(parent,nextSibling) {
 		tiddler = this.wiki.getTiddler(this.imageSource);
 	if(!tiddler) {
 		// The source isn't the title of a tiddler, so we'll assume it's a URL
-		src = this.imageSource;
+		src = this.getVariable("tv-get-export-image-link",{params: [{name: "src",value: this.imageSource}],defaultValue: this.imageSource});
 	} else {
 		// Check if it is an image tiddler
 		if(this.wiki.isImageTiddler(this.imageSource)) {
@@ -87,6 +87,9 @@ ImageWidget.prototype.render = function(parent,nextSibling) {
 						src = _canonical_uri;
 						break;
 				}	
+			} else {
+				// Just trigger loading of the tiddler
+				this.wiki.getTiddlerText(this.imageSource);
 			}
 		}
 	}

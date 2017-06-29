@@ -37,10 +37,10 @@ function SaverHandler(options) {
 		// Listen out for changes to tiddlers
 		this.wiki.addEventListener("change",function(changes) {
 			// Filter the changes so that we only count changes to tiddlers that we care about
-			var filteredChanges = self.filterFn.call(self.wiki,function(callback) {
+			var filteredChanges = self.filterFn.call(self.wiki,function(iterator) {
 				$tw.utils.each(changes,function(change,title) {
 					var tiddler = self.wiki.getTiddler(title);
-					callback(tiddler,title);
+					iterator(tiddler,title);
 				});
 			});
 			// Adjust the number of changes
@@ -75,7 +75,7 @@ function SaverHandler(options) {
 			}
 		});
 		// Set up our beforeunload handler
-		window.addEventListener("beforeunload",function(event) {
+		$tw.addUnloadTask(function(event) {
 			var confirmationMessage;
 			if(self.isDirty()) {
 				confirmationMessage = $tw.language.getString("UnsavedChangesWarning");
@@ -89,14 +89,16 @@ function SaverHandler(options) {
 		$tw.rootWidget.addEventListener("tm-save-wiki",function(event) {
 			self.saveWiki({
 				template: event.param,
-				downloadType: "text/plain"
+				downloadType: "text/plain",
+				variables: event.paramObject
 			});
 		});
 		$tw.rootWidget.addEventListener("tm-download-file",function(event) {
 			self.saveWiki({
 				method: "download",
 				template: event.param,
-				downloadType: "text/plain"
+				downloadType: "text/plain",
+				variables: event.paramObject
 			});
 		});
 	}
@@ -143,12 +145,13 @@ SaverHandler.prototype.saveWiki = function(options) {
 	options = options || {};
 	var self = this,
 		method = options.method || "save",
+		variables = options.variables || {},
 		template = options.template || "$:/core/save/all",
 		downloadType = options.downloadType || "text/plain",
-		text = this.wiki.renderTiddler(downloadType,template),
+		text = this.wiki.renderTiddler(downloadType,template,options),
 		callback = function(err) {
 			if(err) {
-				alert("Error while saving:\n\n" + err);
+				alert($tw.language.getString("Error/WhileSaving") + ":\n\n" + err);
 			} else {
 				// Clear the task queue if we're saving (rather than downloading)
 				if(method !== "download") {
@@ -168,7 +171,7 @@ SaverHandler.prototype.saveWiki = function(options) {
 	// Call the highest priority saver that supports this method
 	for(var t=this.savers.length-1; t>=0; t--) {
 		var saver = this.savers[t];
-		if(saver.info.capabilities.indexOf(method) !== -1 && saver.save(text,method,callback)) {
+		if(saver.info.capabilities.indexOf(method) !== -1 && saver.save(text,method,callback,{variables: {filename: variables.filename}})) {
 			this.logger.log("Saving wiki with method",method,"through saver",saver.info.name);
 			return true;
 		}

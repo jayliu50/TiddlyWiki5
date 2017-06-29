@@ -23,8 +23,14 @@ var bumpSequenceNumber = function(object) {
 
 var TW_TextNode = function(text) {
 	bumpSequenceNumber(this);
-	this.textContent = text;
+	this.textContent = text + "";
 };
+
+Object.defineProperty(TW_TextNode.prototype, "nodeType", {
+	get: function() {
+		return 3;
+	}
+});
 
 Object.defineProperty(TW_TextNode.prototype, "formattedTextContent", {
 	get: function() {
@@ -43,11 +49,24 @@ var TW_Element = function(tag,namespace) {
 	this.namespaceURI = namespace || "http://www.w3.org/1999/xhtml";
 };
 
+Object.defineProperty(TW_Element.prototype, "nodeType", {
+	get: function() {
+		return 1;
+	}
+});
+
+TW_Element.prototype.getAttribute = function(name) {
+	if(this.isRaw) {
+		throw "Cannot getAttribute on a raw TW_Element";
+	}
+	return this.attributes[name];
+};
+
 TW_Element.prototype.setAttribute = function(name,value) {
 	if(this.isRaw) {
 		throw "Cannot setAttribute on a raw TW_Element";
 	}
-	this.attributes[name] = value;
+	this.attributes[name] = value + "";
 };
 
 TW_Element.prototype.setAttributeNS = function(namespace,name,value) {
@@ -93,6 +112,12 @@ TW_Element.prototype.hasChildNodes = function() {
 	return !!this.children.length;
 };
 
+Object.defineProperty(TW_Element.prototype, "childNodes", {
+	get: function() {
+		return this.children;
+	}
+});
+
 Object.defineProperty(TW_Element.prototype, "firstChild", {
 	get: function() {
 		return this.children[0];
@@ -103,12 +128,18 @@ TW_Element.prototype.addEventListener = function(type,listener,useCapture) {
 	// Do nothing
 };
 
+Object.defineProperty(TW_Element.prototype, "tagName", {
+	get: function() {
+		return this.tag || "";
+	}
+});
+
 Object.defineProperty(TW_Element.prototype, "className", {
 	get: function() {
 		return this.attributes["class"] || "";
 	},
 	set: function(value) {
-		this.attributes["class"] = value;
+		this.attributes["class"] = value + "";
 	}
 });
 
@@ -117,7 +148,7 @@ Object.defineProperty(TW_Element.prototype, "value", {
 		return this.attributes.value || "";
 	},
 	set: function(value) {
-		this.attributes.value = value;
+		this.attributes.value = value + "";
 	}
 });
 
@@ -134,7 +165,7 @@ Object.defineProperty(TW_Element.prototype, "outerHTML", {
 			for(a=0; a<attr.length; a++) {
 				v = this.attributes[attr[a]];
 				if(v !== undefined) {
-					output.push(" ",attr[a],"='",$tw.utils.htmlEncode(v),"'");
+					output.push(" ",attr[a],"=\"",$tw.utils.htmlEncode(v),"\"");
 				}
 			}
 		}
@@ -144,7 +175,7 @@ Object.defineProperty(TW_Element.prototype, "outerHTML", {
 				style.push(s + ":" + this.style[s] + ";");
 			}
 			if(style.length > 0) {
-				output.push(" style='",style.join(""),"'")
+				output.push(" style=\"",style.join(""),"\"")
 			}
 		}
 		output.push(">");
@@ -175,13 +206,28 @@ Object.defineProperty(TW_Element.prototype, "innerHTML", {
 	set: function(value) {
 		this.isRaw = true;
 		this.rawHTML = value;
+		this.rawTextContent = null;
+	}
+});
+
+Object.defineProperty(TW_Element.prototype, "textInnerHTML", {
+	set: function(value) {
+		if(this.isRaw) {
+			this.rawTextContent = value;
+		} else {
+			throw "Cannot set textInnerHTML of a non-raw TW_Element";
+		}
 	}
 });
 
 Object.defineProperty(TW_Element.prototype, "textContent", {
 	get: function() {
 		if(this.isRaw) {
-			throw "Cannot get textContent on a raw TW_Element";
+			if(this.rawTextContent === null) {
+				return "";
+			} else {
+				return this.rawTextContent;
+			}
 		} else {
 			var b = [];
 			$tw.utils.each(this.children,function(node) {
@@ -198,7 +244,7 @@ Object.defineProperty(TW_Element.prototype, "textContent", {
 Object.defineProperty(TW_Element.prototype, "formattedTextContent", {
 	get: function() {
 		if(this.isRaw) {
-			throw "Cannot get formattedTextContent on a raw TW_Element";
+			return "";
 		} else {
 			var b = [],
 				isBlock = $tw.config.htmlBlockElements.indexOf(this.tag) !== -1;

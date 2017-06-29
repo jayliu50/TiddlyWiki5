@@ -13,6 +13,7 @@ Link widget
 "use strict";
 
 var Widget = require("$:/core/modules/widgets/widget.js").widget;
+var MISSING_LINK_CONFIG_TITLE = "$:/config/MissingLinks";
 
 var LinkWidget = function(parseTreeNode,options) {
 	this.initialise(parseTreeNode,options);
@@ -35,9 +36,10 @@ LinkWidget.prototype.render = function(parent,nextSibling) {
 	this.execute();
 	// Get the value of the tv-wikilinks configuration macro
 	var wikiLinksMacro = this.getVariable("tv-wikilinks"),
-		useWikiLinks = wikiLinksMacro ? (wikiLinksMacro.trim() !== "no") : true;
+		useWikiLinks = wikiLinksMacro ? (wikiLinksMacro.trim() !== "no") : true,
+		missingLinksEnabled = !(this.hideMissingLinks && this.isMissing && !this.isShadow);
 	// Render the link if required
-	if(useWikiLinks) {
+	if(useWikiLinks && missingLinksEnabled) {
 		this.renderLink(parent,nextSibling);
 	} else {
 		// Just insert the link text
@@ -53,8 +55,13 @@ Render this widget into the DOM
 */
 LinkWidget.prototype.renderLink = function(parent,nextSibling) {
 	var self = this;
+	// Sanitise the specified tag
+	var tag = this.linkTag;
+	if($tw.config.htmlUnsafeElements.indexOf(tag) !== -1) {
+		tag = "a";
+	}
 	// Create our element
-	var domNode = this.document.createElement("a");
+	var domNode = this.document.createElement(tag);
 	// Assign classes
 	var classes = [];
 	if(this.linkClasses) {
@@ -75,9 +82,15 @@ LinkWidget.prototype.renderLink = function(parent,nextSibling) {
 	// Set an href
 	var wikiLinkTemplateMacro = this.getVariable("tv-wikilink-template"),
 		wikiLinkTemplate = wikiLinkTemplateMacro ? wikiLinkTemplateMacro.trim() : "#$uri_encoded$",
-		wikiLinkText = wikiLinkTemplate.replace("$uri_encoded$",encodeURIComponent(this.to));
-	wikiLinkText = wikiLinkText.replace("$uri_doubleencoded$",encodeURIComponent(encodeURIComponent(this.to)));
-	domNode.setAttribute("href",wikiLinkText);
+		wikiLinkText = $tw.utils.replaceString(wikiLinkTemplate,"$uri_encoded$",encodeURIComponent(this.to));
+	wikiLinkText = $tw.utils.replaceString(wikiLinkText,"$uri_doubleencoded$",encodeURIComponent(encodeURIComponent(this.to)));
+	wikiLinkText = this.getVariable("tv-get-export-link",{params: [{name: "to",value: this.to}],defaultValue: wikiLinkText});
+	if(tag === "a") {
+		domNode.setAttribute("href",wikiLinkText);
+	}
+	if(this.tabIndex) {
+		domNode.setAttribute("tabindex",this.tabIndex);
+	}
 	// Set the tooltip
 	// HACK: Performance issues with re-parsing the tooltip prevent us defaulting the tooltip to "<$transclude field='tooltip'><$transclude field='title'/></$transclude>"
 	var tooltipWikiText = this.tooltip || this.getVariable("tv-wikilink-tooltip");
@@ -97,17 +110,23 @@ LinkWidget.prototype.renderLink = function(parent,nextSibling) {
 	// Add a click event handler
 	$tw.utils.addEventListeners(domNode,[
 		{name: "click", handlerObject: this, handlerMethod: "handleClickEvent"},
-		{name: "dragstart", handlerObject: this, handlerMethod: "handleDragStartEvent"},
-		{name: "dragend", handlerObject: this, handlerMethod: "handleDragEndEvent"}
 	]);
+	// Make the link draggable if required
+	if(this.draggable === "yes") {
+		$tw.utils.makeDraggable({
+			domNode: domNode,
+			dragTiddlerFn: function() {return self.to;},
+			widget: this
+		});
+	}
 	// Insert the link into the DOM and render any children
 	parent.insertBefore(domNode,nextSibling);
 	this.renderChildren(domNode,null);
 	this.domNodes.push(domNode);
 };
 
-LinkWidget.prototype.handleClickEvent = function (event) {
-	// Send the click on it's way as a navigate event
+LinkWidget.prototype.handleClickEvent = function(event) {
+	// Send the click on its way as a navigate event
 	var bounds = this.domNodes[0].getBoundingClientRect();
 	this.dispatchEvent({
 		type: "tm-navigate",
@@ -116,86 +135,35 @@ LinkWidget.prototype.handleClickEvent = function (event) {
 		navigateFromNode: this,
 		navigateFromClientRect: { top: bounds.top, left: bounds.left, width: bounds.width, right: bounds.right, bottom: bounds.bottom, height: bounds.height
 		},
-		navigateSuppressNavigation: event.metaKey || event.ctrlKey || (event.button === 1)
+		navigateSuppressNavigation: event.metaKey || event.ctrlKey || (event.button === 1),
+		metaKey: event.metaKey,
+		ctrlKey: event.ctrlKey,
+		altKey: event.altKey,
+		shiftKey: event.shiftKey
 	});
-	event.preventDefault();
+	if(this.domNodes[0].hasAttribute("href")) {
+		event.preventDefault();
+	}
 	event.stopPropagation();
 	return false;
-};
-
-LinkWidget.prototype.handleDragStartEvent = function(event) {
-	if(event.target === this.domNodes[0]) {
-		if(this.to) {
-			// Set the dragging class on the element being dragged
-			$tw.utils.addClass(event.target,"tc-tiddlylink-dragging");
-			// Create the drag image elements
-			this.dragImage = this.document.createElement("div");
-			this.dragImage.className = "tc-tiddler-dragger";
-			var inner = this.document.createElement("div");
-			inner.className = "tc-tiddler-dragger-inner";
-			inner.appendChild(this.document.createTextNode(this.to));
-			this.dragImage.appendChild(inner);
-			this.document.body.appendChild(this.dragImage);
-			// Astoundingly, we need to cover the dragger up: http://www.kryogenix.org/code/browser/custom-drag-image.html
-			var cover = this.document.createElement("div");
-			cover.className = "tc-tiddler-dragger-cover";
-			cover.style.left = (inner.offsetLeft - 16) + "px";
-			cover.style.top = (inner.offsetTop - 16) + "px";
-			cover.style.width = (inner.offsetWidth + 32) + "px";
-			cover.style.height = (inner.offsetHeight + 32) + "px";
-			this.dragImage.appendChild(cover);
-			// Set the data transfer properties
-			var dataTransfer = event.dataTransfer;
-			// First the image
-			dataTransfer.effectAllowed = "copy";
-			if(dataTransfer.setDragImage) {
-				dataTransfer.setDragImage(this.dragImage.firstChild,-16,-16);
-			}
-			// Then the data
-			dataTransfer.clearData();
-			var jsonData = this.wiki.getTiddlerAsJson(this.to),
-				textData = this.wiki.getTiddlerText(this.to,""),
-				title = this.to.indexOf(" ") === -1 ? this.to : "[[" + this.to + "]]";
-			// IE doesn't like these content types
-			if(!$tw.browser.isIE) {
-				dataTransfer.setData("text/vnd.tiddler",jsonData);
-				dataTransfer.setData("text/plain",title);
-				dataTransfer.setData("text/x-moz-url","data:text/vnd.tiddler," + encodeURI(jsonData));
-			}
-			dataTransfer.setData("URL","data:text/vnd.tiddler," + encodeURI(jsonData));
-			dataTransfer.setData("Text",title);
-			event.stopPropagation();
-		} else {
-			event.preventDefault();
-		}
-	}
-};
-
-LinkWidget.prototype.handleDragEndEvent = function(event) {
-	if(event.target === this.domNodes[0]) {
-		// Remove the dragging class on the element being dragged
-		$tw.utils.removeClass(event.target,"tc-tiddlylink-dragging");
-		// Delete the drag image element
-		if(this.dragImage) {
-			this.dragImage.parentNode.removeChild(this.dragImage);
-		}
-	}
 };
 
 /*
 Compute the internal state of the widget
 */
 LinkWidget.prototype.execute = function() {
-	// Get the target tiddler title
+	// Pick up our attributes
 	this.to = this.getAttribute("to",this.getVariable("currentTiddler"));
-	// Get the link title and aria label
 	this.tooltip = this.getAttribute("tooltip");
 	this["aria-label"] = this.getAttribute("aria-label");
-	// Get the link classes
 	this.linkClasses = this.getAttribute("class");
+	this.tabIndex = this.getAttribute("tabindex");
+	this.draggable = this.getAttribute("draggable","yes");
+	this.linkTag = this.getAttribute("tag","a");
 	// Determine the link characteristics
 	this.isMissing = !this.wiki.tiddlerExists(this.to);
 	this.isShadow = this.wiki.isShadowTiddler(this.to);
+	this.hideMissingLinks = ($tw.wiki.getTiddlerText(MISSING_LINK_CONFIG_TITLE,"yes") === "no");
 	// Make the child widgets
 	this.makeChildWidgets();
 };
@@ -205,7 +173,7 @@ Selectively refreshes the widget if needed. Returns true if the widget or any of
 */
 LinkWidget.prototype.refresh = function(changedTiddlers) {
 	var changedAttributes = this.computeAttributes();
-	if(changedAttributes.to || changedTiddlers[this.to] || changedAttributes["aria-label"] || changedAttributes.tooltip) {
+	if(changedAttributes.to || changedTiddlers[this.to] || changedAttributes["aria-label"] || changedAttributes.tooltip || changedTiddlers[MISSING_LINK_CONFIG_TITLE]) {
 		this.refreshSelf();
 		return true;
 	}

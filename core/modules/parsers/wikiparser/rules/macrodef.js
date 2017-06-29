@@ -58,10 +58,10 @@ exports.parse = function() {
 	var reEnd;
 	if(this.match[3]) {
 		// If so, the end of the body is marked with \end
-		reEnd = /(\r?\n\\end(?:$|\r?\n))/mg;
+		reEnd = /(\r?\n\\end[^\S\n\r]*(?:$|\r?\n))/mg;
 	} else {
 		// Otherwise, the end of the definition is marked by the end of the line
-		reEnd = /(\r?\n)/mg;
+		reEnd = /($|\r?\n)/mg;
 		// Move past any whitespace
 		this.parser.pos = $tw.utils.skipWhiteSpace(this.parser.source,this.parser.pos);
 	}
@@ -78,10 +78,13 @@ exports.parse = function() {
 	}
 	// Save the macro definition
 	return [{
-		type: "macrodef",
-		name: this.match[1],
-		params: params,
-		text: text
+		type: "set",
+		attributes: {
+			name: {type: "string", value: this.match[1]},
+			value: {type: "string", value: text}
+		},
+		children: [],
+		params: params
 	}];
 };
 

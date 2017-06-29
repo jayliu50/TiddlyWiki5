@@ -23,12 +23,12 @@ exports.startup = function() {
 	// Install the modal message mechanism
 	$tw.modal = new $tw.utils.Modal($tw.wiki);
 	$tw.rootWidget.addEventListener("tm-modal",function(event) {
-		$tw.modal.display(event.param);
+		$tw.modal.display(event.param,{variables: event.paramObject});
 	});
 	// Install the notification  mechanism
 	$tw.notifier = new $tw.utils.Notifier($tw.wiki);
 	$tw.rootWidget.addEventListener("tm-notify",function(event) {
-		$tw.notifier.display(event.param);
+		$tw.notifier.display(event.param,{variables: event.paramObject});
 	});
 	// Install the scroller
 	$tw.pageScroller = new $tw.utils.PageScroller();

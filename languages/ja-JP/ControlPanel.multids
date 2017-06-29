@@ -10,8 +10,8 @@ Basics/DefaultTiddlers/BottomHint: タイトルに空白を含めたいときは
 Basics/DefaultTiddlers/Prompt: デフォルト tiddler:
 Basics/DefaultTiddlers/TopHint: このファイルを開いたときに初期表示される tiddler を設定してください:
 Basics/Language/Prompt: 現在の言語:
-Basics/NewJournal/Title/Prompt: 日誌（journal tiddlers）のデフォルトのタイトル
 Basics/NewJournal/Tags/Prompt: 日誌（journal tiddler）のタグ
+Basics/NewJournal/Title/Prompt: 日誌（journal tiddlers）のデフォルトのタイトル
 Basics/OverriddenShadowTiddlers/Prompt: 上書きされている隠し tiddler 数:
 Basics/ShadowTiddlers/Prompt: 隠し tiddler 数:
 Basics/Subtitle/Prompt: サブタイトル:
@@ -95,6 +95,6 @@ Toolbars/PageControls/Hint: サイドバーに表示するボタンを選んで�
 Toolbars/ViewToolbar/Caption: 閲覧画面
 Toolbars/ViewToolbar/Hint: 閲覧画面に表示するボタンを選んでください。
 Tools/Caption: ツール
-Tools/Download/Full/Caption: 全てダウンロードする
+Tools/Download/Full/Caption: 全てウィキをダウンロードする
 Tools/Export/AllAsStaticHTML/Caption: すべての tiddler を含む閲覧用 HTML としてダウンロードする
 Tools/Export/Heading: エクスポート

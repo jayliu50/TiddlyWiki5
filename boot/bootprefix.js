@@ -20,9 +20,15 @@ $tw = $tw || Object.create(null);
 $tw.boot = $tw.boot || Object.create(null);
 
 // Detect platforms
-$tw.browser = typeof(window) !== "undefined" ? {} : null;
-$tw.node = typeof(process) === "object" ? {} : null;
-$tw.nodeWebKit = $tw.node && global.window && global.window.nwDispatcher ? {} : null;
+if(!("browser" in $tw)) {
+	$tw.browser = typeof(window) !== "undefined" ? {} : null;
+}
+if(!("node" in $tw)) {
+	$tw.node = typeof(process) === "object" ? {} : null;
+}
+if(!("nodeWebKit" in $tw)) {
+	$tw.nodeWebKit = $tw.node && global.window && global.window.nwDispatcher ? {} : null;
+}
 
 // Set default boot tasks
 $tw.boot.tasks = {
@@ -93,7 +99,14 @@ $tw.preloadTiddler = function(fields) {
 	$tw.preloadTiddlers.push(fields);
 };
 
-return $tw
+/*
+Convenience function for pushing an array of tiddlers onto the preloading array
+*/
+$tw.preloadTiddlerArray = function(fieldsArray) {
+	$tw.preloadTiddlers.push.apply($tw.preloadTiddlers,fieldsArray);
+};
+
+return $tw;
 
 });
 

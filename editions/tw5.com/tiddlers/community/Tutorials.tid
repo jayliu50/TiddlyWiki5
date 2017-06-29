@@ -1,9 +1,10 @@
-title: Tutorials
+created: 20140908125300000
+modified: 20160602172722526
 tags: Community
-created: 201409081253
-modified: 201409081253
+title: Tutorials
+type: text/vnd.tiddlywiki
 
-Here are some webpages with tips and tutorials related to ~TiddlyWiki 
+Here are some webpages with tips and tutorials related to ~TiddlyWiki.
 
 <div class="tc-link-info">
 
@@ -12,8 +13,6 @@ Here are some webpages with tips and tutorials related to ~TiddlyWiki
 <div class="tc-link-info-item">
 
 ! <$link><$view field="title"/></$link>
-
-!!! <a href={{!!url}} target="_blank"><$text text={{!!url}}/></a>
 
 <div class="tc-subtitle">Posted <$view field="modified" format="relativedate"/></div>
 
